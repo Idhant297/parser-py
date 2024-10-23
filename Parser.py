@@ -173,8 +173,8 @@ class Parser:
             return self.if_stmt()
         elif self.current_token[0] == 'WHILE':
             return self.while_stmt()
-        elif self.current_token[0] == 'NEWLINE':
-            self.advance()  # Skip newlines
+        elif self.current_token[0] == 'NEWLINE' or self.current_token[0].isspace():
+            self.advance()  # Skip whitespace
             return None
         
         else:
@@ -228,9 +228,21 @@ class Parser:
         self.advance()  # Skip 'while' keyword
         condition = self.boolean_expression() # Get the condition (e.g., x < 100)
         
+        # Expect a colon after the condition
         if self.current_token[0] == 'COLON':
             self.advance()  # Skip the colon
-            block = self.block()  # Parse the statements in the while block
+            
+            # Get the block of statements
+            block_statements = []
+            stmt = self.statement()
+            if stmt:
+                if isinstance(stmt, list):
+                    block_statements.extend(stmt)
+                else:
+                    block_statements.append(stmt)
+                    
+            block = AST.Block(block_statements)
+            
             return AST.WhileStatement(condition, block)
         else:
             raise ValueError("Expected ':' after while condition")
@@ -250,13 +262,15 @@ class Parser:
         while (self.current_token[0] != 'EOF' and 
             self.current_token[0] != 'ELSE' and
             self.current_token[0] != 'ELIF'):
-            
-            # Get the statement
+        
             stmt = self.statement()
             if stmt:
-                statements.append(stmt)
+                if isinstance(stmt, list):
+                    statements.extend(stmt)
+                else:
+                    statements.append(stmt)
                 
-            # Break if we hit the end of the block
+        # Check if we've reached the end of the block
             if (self.current_token[0] == 'EOF' or
                 self.current_token[0] == 'ELSE' or
                 self.current_token[0] == 'ELIF'):
@@ -290,12 +304,12 @@ class Parser:
         # write your code here, for reference check expression function
         left = self.term()
     
-        while self.current_token[0] in ['EQUALS_EQUALS', 'NEQ', 'GREATER', 'LESS']:
+        if self.current_token[0] in ['EQUALS_EQUALS', 'NEQ', 'GREATER', 'LESS']:
             operator = self.current_token
             self.advance()  # Skip operator
             right = self.term()
-            left = AST.BooleanExpression(left, operator, right)
-        
+            return AST.BooleanExpression(left, operator, right)
+            
         return left
 
     def term(self):
