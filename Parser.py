@@ -144,8 +144,12 @@ class Parser:
         while self.current_token[0] != 'EOF':
             # TODO: Parse each statement and append it to the list.
             stmt = self.statement()
-            if stmt:
+            if stmt:  # If we got a valid statement
                 statements.append(stmt)
+                
+            # Handle end of line/statement
+            if self.current_token[0] == 'EOF':
+                break
         # TODO: Return an AST node that represents the program.
         return statements
 
@@ -169,6 +173,9 @@ class Parser:
             return self.if_stmt()
         elif self.current_token[0] == 'WHILE':
             return self.while_stmt()
+        elif self.current_token[0] == 'NEWLINE':
+            self.advance()  # Skip newlines
+            return None
         
         else:
             # TODO: Handle additional statements if necessary.
@@ -218,11 +225,15 @@ class Parser:
             # statements
         TODO: Implement the logic to parse while loops with a condition and a block of statements.
         """
-        self.advance()  # Skip 'while' token
-        condition = self.boolean_expression()  # Parse the condition 
-        self.expect('COLON')  # Expect and skip the colon
-        block = self.block()  # Parse the block of statements
-        return AST.WhileStatement(condition, block)
+        self.advance()  # Skip 'while' keyword
+        condition = self.boolean_expression() # Get the condition (e.g., x < 100)
+        
+        if self.current_token[0] == 'COLON':
+            self.advance()  # Skip the colon
+            block = self.block()  # Parse the statements in the while block
+            return AST.WhileStatement(condition, block)
+        else:
+            raise ValueError("Expected ':' after while condition")
 
     def block(self):
         """
@@ -235,11 +246,22 @@ class Parser:
         TODO: Implement logic to capture multiple statements as part of a block.
         """
         statements = []
-        # write your code here
-        while self.current_token[0] != 'EOF' and self.current_token[0] not in ['ELSE', 'IF', 'WHILE']:
+        # Parse statements in the block until we hit a de-dent or EOF
+        while (self.current_token[0] != 'EOF' and 
+            self.current_token[0] != 'ELSE' and
+            self.current_token[0] != 'ELIF'):
+            
+            # Get the statement
             stmt = self.statement()
             if stmt:
                 statements.append(stmt)
+                
+            # Break if we hit the end of the block
+            if (self.current_token[0] == 'EOF' or
+                self.current_token[0] == 'ELSE' or
+                self.current_token[0] == 'ELIF'):
+                break
+                
         return AST.Block(statements)
 
     def expression(self):
@@ -267,11 +289,13 @@ class Parser:
         """
         # write your code here, for reference check expression function
         left = self.term()
+    
         while self.current_token[0] in ['EQUALS_EQUALS', 'NEQ', 'GREATER', 'LESS']:
-            op = self.current_token
-            self.advance()
+            operator = self.current_token
+            self.advance()  # Skip operator
             right = self.term()
-            left = AST.BooleanExpression(left, op, right)
+            left = AST.BooleanExpression(left, operator, right)
+        
         return left
 
     def term(self):
