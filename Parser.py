@@ -10,21 +10,36 @@ class Lexer:
     # Move to the next position in the code.
     def advance(self):
         # TODO: Students need to complete the logic to advance the position.
+        self.position += 1
+        if self.position > len(self.code) - 1:
+            self.current_char = None
+        else:
+            self.current_char = self.code[self.position]
 
     # Skip whitespaces.
     def skip_whitespace(self):
         # TODO: Complete logic to skip whitespaces.
+        while self.current_char is not None and self.current_char.isspace():
+            self.advance()
 
     # Tokenize an identifier.
     def identifier(self):
         result = ''
         # TODO: Complete logic for handling identifiers.
+        
+        while self.current_char is not None and (self.current_char.isalnum() or self.current_char == '_'):
+            result += self.current_char
+            self.advance()
         return ('IDENTIFIER', result)
 
     # Tokenize a number.
     def number(self):
         # TODO: Implement logic to tokenize numbers.
-        return ('NUMBER', 0)
+        result = ''
+        while self.current_char is not None and self.current_char.isdigit():
+            result += self.current_char
+            self.advance()
+        return ('NUMBER', int(result))
 
     def token(self):
         while self.current_char is not None:
@@ -44,15 +59,50 @@ class Lexer:
                 return self.number()
 
             # TODO: Add logic for operators and punctuation tokens.
-            
+            if self.current_char == '=':
+                self.advance()
+                if self.current_char == '=':
+                    self.advance()
+                    return ('EQUALS_EQUALS', '==')
+                return ('EQUALS', '=')
+            elif self.current_char == '!':
+                self.advance()
+                if self.current_char == '=':
+                    self.advance()
+                    return ('NEQ', '!=')
+            elif self.current_char == '<':
+                self.advance()
+                return ('LESS', '<')
+            elif self.current_char == '>':
+                self.advance()
+                return ('GREATER', '>')
+            elif self.current_char == '+':
+                self.advance()
+                return ('PLUS', '+')
+            elif self.current_char == '-':
+                self.advance()
+                return ('MINUS', '-')
+            elif self.current_char == '*':
+                self.advance()
+                return ('MULTIPLY', '*')
+            elif self.current_char == '/':
+                self.advance()
+                return ('DIVIDE', '/')
+            elif self.current_char == '(':
+                self.advance()
+                return ('LPAREN', '(')
+            elif self.current_char == ')':
+                self.advance()
+                return ('RPAREN', ')')
+            elif self.current_char == ':':
+                self.advance()
+                return ('COLON', ':')
+            elif self.current_char == ',':
+                self.advance()
+                return ('COMMA', ',')
             raise ValueError(f"Illegal character at position {self.position}: {self.current_char}")
 
         return ('EOF', None)
-
-    # Collect all tokens into a list.
-    def tokenize(self):
-        # TODO: Implement the logic to collect tokens.
-        return self.tokens
 
 
 class Parser:
